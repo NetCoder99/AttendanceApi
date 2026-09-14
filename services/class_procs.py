@@ -1,28 +1,79 @@
 # --------------------------------------------------------------------
 # Search for a class within the start and stop times
 # --------------------------------------------------------------------
-def GetCurrentClass(day_of_week: int, before_interval:int = 15, after_interval:int = 15):
-    #class_times = Classes.objects.filter(class_day_of_week=today).order_by('class_start_time')
-    class_times = db_session.query(Classes).filter_by(classDayOfWeek=day_of_week)
+import logging
+from datetime import date, datetime, timedelta
+from typing import Type
 
-    current_date = datetime.now()
-    current_date_str = current_date.strftime("%m/%d/%Y")
-    date_format = "%m/%d/%Y %I:%M %p"
-    for class_record in class_times:
-        start_checkin_str  = current_date_str + ' ' + class_record.classStartTime
-        start_checkin_date = datetime.strptime(start_checkin_str, date_format)
-        finis_checkin_str  = current_date_str + ' ' + class_record.classFinisTime
-        finis_checkin_date = datetime.strptime(finis_checkin_str, date_format)
+import constants
+from models.data_models import Classes
+from services.sqlite_alchemy import getAlchemySession
 
-        start_checkin_time = start_checkin_date - timedelta(minutes=before_interval)
-        finis_checkin_time = start_checkin_date + timedelta(minutes=after_interval)
+# ------------------------------------------------------------------------------------------
+logger = logging.getLogger(__name__)
+db_session = getAlchemySession()
+# ------------------------------------------------------------------------------------------
 
-        DisplayClassDateTimes(start_checkin_time, finis_checkin_time, current_date)
+def GetCurrentClass(checkin_datetime: datetime, before_interval:int = 15, after_interval:int = 15) -> Classes | None:
+    try:
+        day_of_week = checkin_datetime.date().weekday() + 1
+        class_times = db_session.query(Classes).filter_by(classDayOfWeek=day_of_week).order_by(Classes.classCheckinStart)
 
-        if start_checkin_time <= current_date <= finis_checkin_time:
-            return class_record
+        checkin_datetime_str = checkin_datetime.strftime("%m/%d/%Y")
+        date_format = "%m/%d/%Y %I:%M %p"
+        for class_record in class_times:
+            start_checkin_str  = checkin_datetime_str + ' ' + class_record.classStartTime
+            start_checkin_date = datetime.strptime(start_checkin_str, date_format)
+            finis_checkin_str  = checkin_datetime_str + ' ' + class_record.classFinisTime
+            # finis_checkin_date = datetime.strptime(finis_checkin_str, date_format)
 
-        if start_checkin_date <= current_date <= finis_checkin_date:
-            return class_record
+            start_checkin_time = start_checkin_date - timedelta(minutes=before_interval)
+            finis_checkin_time = start_checkin_date + timedelta(minutes=after_interval)
 
-    return None
+            DisplayClassDateTimes(start_checkin_time, finis_checkin_time, checkin_datetime)
+
+            if start_checkin_time <= checkin_datetime <= finis_checkin_time:
+                return class_record
+
+            # if start_checkin_date <= checkin_datetime <= finis_checkin_date:
+            #     return class_record
+
+        return None
+    except Exception as ex:
+        print(f'Error: {str(ex)}')
+        raise ex
+
+def GetNextClass(checkin_datetime: datetime, before_interval: int = 15) -> Classes | None:
+    try:
+        day_of_week = checkin_datetime.date().weekday() + 1
+        class_times = db_session.query(Classes).filter_by(classDayOfWeek=day_of_week)
+        current_date_str = checkin_datetime.strftime("%m/%d/%Y")
+        date_format = "%m/%d/%Y %I:%M %p"
+        for class_record in class_times:
+            start_checkin_str  = current_date_str + ' ' + class_record.classStartTime
+            start_checkin_date = datetime.strptime(start_checkin_str, date_format)
+            start_checkin_time = start_checkin_date - timedelta(minutes=before_interval)
+            if start_checkin_time >= checkin_datetime:
+                return class_record
+        return None
+    except Exception as ex:
+        print(f'Error: {str(ex)}')
+        raise ex
+
+# --------------------------------------------------------------------
+# Insert the attendance checkin record
+# --------------------------------------------------------------------
+def DisplayClassDateTimes(start_datetime: date, finis_datetime: date, checkin_date: date = None):
+    if checkin_date:
+        logger.info(
+            f'{checkin_date.strftime(constants.dayNameAbbr)} - '
+            f'{start_datetime.strftime(constants.fmtDateTime3)} '
+            f'{finis_datetime.strftime(constants.fmtDateTime3)} '
+            f'{checkin_date.strftime(constants.fmtDateTime3)}'
+        )
+    else:
+        logger.info(
+            f'{checkin_date.strftime(constants.dayNameAbbr)} - '
+            f'{start_datetime.strftime(constants.fmtDateTime3)} '
+            f'{finis_datetime.strftime(constants.fmtDateTime3)} '
+        )

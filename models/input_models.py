@@ -5,6 +5,11 @@ class CheckStudentParms(BaseModel):
     badge_number: int
     post_flag: bool = False
 
+class SearchStudentParams(BaseModel):
+    badge_number: int
+    first_name: str
+    last_name: str
+
 class NewPromotionRecord(BaseModel):
     badge_number: int
     belt_id : int
