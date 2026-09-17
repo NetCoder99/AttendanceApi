@@ -11,6 +11,7 @@ db_session = getAlchemySession()
 # commonly used function to get the student record
 # -----------------------------------------------------------------------------------
 def GetStudentRecord(badge_number: int) -> Students:
+    db_session.expire_all()
     student_list_stmt = select(Students).where(Students.badgeNumber == badge_number)
     return db_session.scalars(student_list_stmt).first()
 
