@@ -9,6 +9,7 @@ class SearchStudentParams(BaseModel):
     badge_number: int
     first_name: str
     last_name: str
+    include_photo: bool = False
 
 class NewPromotionRecord(BaseModel):
     badge_number: int

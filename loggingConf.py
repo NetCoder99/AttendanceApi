@@ -16,7 +16,7 @@ LOGGING_CONFIG = {
             "formatter": "detailed",
             "stream": "ext://sys.stdout",
         },
-        "file": {
+        "basicFileHandler": {
             "class": "logging.FileHandler",
             "level": "DEBUG",
             "formatter": "detailed",
@@ -24,9 +24,18 @@ LOGGING_CONFIG = {
             "mode": "a",
             "encoding": "utf-8",
         },
+        "rotatingFileHandler": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "detailed",
+            "filename": f'{constants.applicationName}.log',
+            "maxBytes": 10485760,
+            "backupCount": 5,
+            "encoding": "utf-8",
+        },
     },
     "root": {
         "level": "DEBUG",
-        "handlers": ["console"],
+        "handlers": ["console", "rotatingFileHandler"],
     },
 }

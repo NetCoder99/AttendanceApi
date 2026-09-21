@@ -1,19 +1,15 @@
 import constants
+import logging.config
+
 from sqlalchemy import select, func
 from datetime import datetime
 from models.data_models import Students, Promotions, Attendance, Requirements
 from models.output_models import StudentRankFields
 from services.sqlite_alchemy import getAlchemySession
 
+logger = logging.getLogger(__name__)
 db_session = getAlchemySession()
 
-# -----------------------------------------------------------------------------------
-# commonly used function to get the student record
-# -----------------------------------------------------------------------------------
-def GetStudentRecord(badge_number: int) -> Students:
-    db_session.expire_all()
-    student_list_stmt = select(Students).where(Students.badgeNumber == badge_number)
-    return db_session.scalars(student_list_stmt).first()
 
 # -----------------------------------------------------------------------------------
 # during development the student rank/stripe is not reliably set, thus a complex
@@ -43,7 +39,7 @@ def GetCrntStudentRank(student_record: Students) -> StudentRankFields:
         return next_student_rank
 
     except Exception as ex:
-        print(f'Error: {str(ex)}')
+        logger.exception(f'Error: {str(ex)}')
         raise ex
 
 # -----------------------------------------------------------------------------------
@@ -120,7 +116,7 @@ def GetNextStudentRank(student_record: Students) -> StudentRankFields:
         # return next_student_rank
 
     except Exception as ex:
-        print(f'Error: {str(ex)}')
+        logger.exception(f'Error: {str(ex)}')
         raise ex
 
 
@@ -148,7 +144,7 @@ def GetNextFromCurrent(student_record: Students) -> StudentRankFields:
         next_student_rank.rankMessage = "From current rank"
         return next_student_rank
     except Exception as ex:
-        print(f'Error: {str(ex)}')
+        logger.exception(f'Error: {str(ex)}')
         raise ex
 
 def GetNextFromLastPromotion(last_promotion_record: Promotions) -> StudentRankFields:
@@ -173,7 +169,7 @@ def GetNextFromLastPromotion(last_promotion_record: Promotions) -> StudentRankFi
         next_student_rank.rankMessage = "From last promotion"
         return next_student_rank
     except Exception as ex:
-        print(f'Error: {str(ex)}')
+        logger.exception(f'Error: {str(ex)}')
         raise ex
 
 def GetBasedOnAttendanceTotalCount(student_record: Students) -> StudentRankFields:
@@ -196,7 +192,7 @@ def GetBasedOnAttendanceTotalCount(student_record: Students) -> StudentRankField
         next_student_rank.rankMessage = "From total attendance"
         return next_student_rank
     except Exception as ex:
-        print(f'Error: {str(ex)}')
+        logger.exception(f'Error: {str(ex)}')
         raise ex
 
 # ---------------------------------------------------------------------------------------
