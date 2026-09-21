@@ -1,11 +1,11 @@
+import enum
 from typing import Optional
 import datetime
 
-from sqlalchemy import ForeignKey, Index, Integer, LargeBinary, Text, CheckConstraint
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declarative_base
+from sqlalchemy import ForeignKey, Index, Integer, LargeBinary, Text, CheckConstraint, Enum
+from sqlalchemy.orm import Mapped, mapped_column, declarative_base
 
 import constants
-
 
 class BaseMixin:
     def to_dict(self):
@@ -13,10 +13,6 @@ class BaseMixin:
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
 Base = declarative_base(cls=BaseMixin)
-# class Base(DeclarativeBase):
-#     pass
-
-
 
 class Assets(Base):
     __tablename__ = 'assets'
@@ -230,19 +226,26 @@ class NextPromotion:
     classes_until_from_stripe     : int
     promotion_message             : str
 
+class ArchiveActiontype(str, enum.Enum):
+    UPDATE = 'Update'
+    DELETE = 'Delete'
 
 
 class Archive(Base):
     __tablename__ = 'archive'
     __table_args__ = (
+        CheckConstraint("actionType IN ('Update', 'Delete')", name='chkActionType'),
         CheckConstraint('archiveDateTime IS datetime(archiveDateTime)', name='chkArchiveDateTime'),
-        CheckConstraint('archiveRecord IS (json_valid(archiveRecord))', name='chkArchiveRecordIsJson')
+        CheckConstraint('json_valid(archiveJson)', name='chkArchiveRecordIsJson')
     )
 
-    archiveId   : Mapped[int] = mapped_column(Integer, primary_key=True)
-    badgeNumber : Mapped[Optional[str]] = mapped_column(Text)
-    tableName   : Mapped[Optional[str]] = mapped_column(Text)
-    archiveJson : Mapped[Optional[str]] = mapped_column(Text)
+    archiveId: Mapped[int] = mapped_column(Integer, primary_key=True)
+    keyType: Mapped[Optional[str]] = mapped_column(Text)
+    keyValue: Mapped[Optional[str]] = mapped_column(Text)
+    actionType: Mapped[Optional[ArchiveActiontype]] = mapped_column(Enum(ArchiveActiontype, values_callable=lambda cls: [member.value for member in cls]))
+    badgeNumber: Mapped[Optional[int]] = mapped_column(Integer)
+    tableName: Mapped[Optional[str]] = mapped_column(Text)
+    archiveJson: Mapped[Optional[str]] = mapped_column(Text)
     archiveDateTime: Mapped[Optional[str]] = mapped_column(Text)
 
     @classmethod
@@ -254,3 +257,25 @@ class Archive(Base):
         return_rec.archiveDateTime = datetime.datetime.now().strftime(constants.fmtDateTime)
         return return_rec
 
+# class Archive(Base):
+#     __tablename__ = 'archive'
+#     __table_args__ = (
+#         CheckConstraint('archiveDateTime IS datetime(archiveDateTime)', name='chkArchiveDateTime'),
+#         CheckConstraint('archiveRecord IS (json_valid(archiveRecord))', name='chkArchiveRecordIsJson')
+#     )
+#
+#     archiveId   : Mapped[int] = mapped_column(Integer, primary_key=True)
+#     badgeNumber : Mapped[Optional[str]] = mapped_column(Text)
+#     tableName   : Mapped[Optional[str]] = mapped_column(Text)
+#     archiveJson : Mapped[Optional[str]] = mapped_column(Text)
+#     archiveDateTime: Mapped[Optional[str]] = mapped_column(Text)
+#
+#     @classmethod
+#     def fromDict(cls, inp_dict):
+#         return_rec = Archive()
+#         return_rec.badgeNumber     = inp_dict['badgeNumber']
+#         return_rec.tableName       = inp_dict['tableName']
+#         return_rec.archiveJson     = inp_dict['archiveJson']
+#         return_rec.archiveDateTime = datetime.datetime.now().strftime(constants.fmtDateTime)
+#         return return_rec
+#
